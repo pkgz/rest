@@ -1,5 +1,5 @@
 # rest
-[![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/pkgz/logg)
+[![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/pkgz/rest)
 [![Tests](https://img.shields.io/github/workflow/status/pkgz/rest/Code%20coverage)](https://github.com/pkgz/rest/actions)
 [![codecov](https://img.shields.io/codecov/c/gh/pkgz/rest)](https://codecov.io/gh/pkgz/rest)
 
