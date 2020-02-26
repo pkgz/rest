@@ -4,6 +4,7 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -20,13 +21,18 @@ func Logger(next http.Handler) http.Handler {
 				statusCode = 200
 			}
 
+			uri := r.URL.String()
+			if qun, e := url.QueryUnescape(uri); e == nil {
+				uri = qun
+			}
+
 			ip := strings.Split(r.RemoteAddr, ":")[0]
 			if strings.HasPrefix(r.RemoteAddr, "[") {
 				ip = strings.Split(r.RemoteAddr, "]:")[0] + "]"
 			}
 			duration := time.Now().Sub(start)
 
-			log.Printf("[DEBUG] %s - %s - %s - %v - %v", r.Method, r.URL.RequestURI(), ip, duration, statusCode)
+			log.Printf("[DEBUG] %s - %s - %s - %v - %v", r.Method, uri, ip, duration, statusCode)
 		}()
 
 		next.ServeHTTP(ww, r)

@@ -13,10 +13,10 @@ import (
 func TestJsonError(t *testing.T) {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/empty_error" {
-			ErrorResponse(w, http.StatusInternalServerError, nil, "test")
+			ErrorResponse(w, r, http.StatusInternalServerError, nil, "test")
 			return
 		}
-		ErrorResponse(w, http.StatusUnauthorized, errors.New("err test"), "test")
+		ErrorResponse(w, r, http.StatusUnauthorized, errors.New("err test"), "test")
 		return
 	}
 

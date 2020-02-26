@@ -3,7 +3,9 @@ package rest
 import (
 	"bytes"
 	"encoding/json"
+	"log"
 	"net/http"
+	"net/url"
 )
 
 // HttpError - structure for http errors.
@@ -41,7 +43,7 @@ func JsonResponse(w http.ResponseWriter, data interface{}) {
 }
 
 // JsonError - write a HttpError structure as response.
-func ErrorResponse(w http.ResponseWriter, code int, error error, msg string) {
+func ErrorResponse(w http.ResponseWriter, r *http.Request, code int, error error, msg string) {
 	err := HttpError{
 		Err:     http.StatusText(code),
 		Message: msg,
@@ -50,6 +52,13 @@ func ErrorResponse(w http.ResponseWriter, code int, error error, msg string) {
 	if error != nil {
 		err.Err = error.Error()
 	}
+
+	uri := r.URL.String()
+	if qun, e := url.QueryUnescape(uri); e == nil {
+		uri = qun
+	}
+
+	log.Printf("[DEBUG] %s - %s - %d (%s) - %s - %s", r.Method, uri, code, http.StatusText(code), err, msg)
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(code)

@@ -23,13 +23,13 @@ func ReadBody(w http.ResponseWriter, r *http.Request, str interface{}) error {
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil && err != io.EOF {
-		ErrorResponse(w, http.StatusInternalServerError, err, "")
+		ErrorResponse(w, r, http.StatusInternalServerError, err, "")
 		return err
 	}
 
 	err = json.Unmarshal(body, str)
 	if err != nil {
-		ErrorResponse(w, http.StatusBadRequest, err, "")
+		ErrorResponse(w, r, http.StatusBadRequest, err, "")
 		return err
 	}
 
