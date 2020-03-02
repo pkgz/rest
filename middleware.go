@@ -32,7 +32,7 @@ func Logger(next http.Handler) http.Handler {
 			}
 			duration := time.Now().Sub(start)
 
-			log.Printf("[DEBUG] %s - %s - %s - %v - %v", r.Method, uri, ip, duration, statusCode)
+			log.Printf("[DEBUG] %s - %s - %s - %v - %v", r.Method, uri, ip, statusCode, duration)
 		}()
 
 		next.ServeHTTP(ww, r)
