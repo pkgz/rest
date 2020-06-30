@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/stretchr/testify/require"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -43,18 +42,7 @@ func TestReadBody(t *testing.T) {
 		var emptyStruct interface{}
 		err := ReadBody(w, r, &emptyStruct)
 		require.Error(t, err)
-
-		resp := w.Result()
-		require.Equal(t, http.StatusInternalServerError, resp.StatusCode)
-
-		body, err := ioutil.ReadAll(resp.Body)
-		require.NoError(t, err)
-
-		var respError HttpError
-		err = json.Unmarshal(body, &respError)
-		require.NoError(t, err)
-
-		require.NotEmpty(t, respError.Err)
+		require.Equal(t, errBodyRead, err)
 	})
 
 	t.Run("unmarshal struct", func(t *testing.T) {
@@ -63,18 +51,7 @@ func TestReadBody(t *testing.T) {
 		var emptyStruct interface{}
 		err := ReadBody(w, r, &emptyStruct)
 		require.Error(t, err)
-
-		resp := w.Result()
-		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
-
-		body, err := ioutil.ReadAll(resp.Body)
-		require.NoError(t, err)
-
-		var respError HttpError
-		err = json.Unmarshal(body, &respError)
-		require.NoError(t, err)
-
-		require.NotEmpty(t, respError.Err)
+		require.Equal(t, "unexpected end of JSON input", err.Error())
 	})
 
 	t.Run("good request", func(t *testing.T) {
