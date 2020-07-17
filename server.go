@@ -19,8 +19,17 @@ type Server struct {
 	httpServer *http.Server
 }
 
+func handler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("."))
+}
+
 // Run - will initialize server and run it on provided port.
 func (s *Server) Run(router http.Handler) error {
+	if s.Port == 0 {
+		s.Port = 8080
+	}
 	if s.ReadHeaderTimeout == 0 {
 		s.ReadHeaderTimeout = 10 * time.Second
 	}
@@ -29,6 +38,12 @@ func (s *Server) Run(router http.Handler) error {
 	}
 	if s.IdleTimeout == 0 {
 		s.IdleTimeout = 60 * time.Second
+	}
+	if router == nil {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/ping", handler)
+		mux.HandleFunc("/liveness", handler)
+		router = mux
 	}
 
 	s.httpServer = &http.Server{
@@ -39,7 +54,7 @@ func (s *Server) Run(router http.Handler) error {
 		IdleTimeout:       s.IdleTimeout,
 	}
 
-	log.Printf("[INFO] rest server started on port %d", s.Port)
+	log.Printf("[INFO] rest server started on %s", s.httpServer.Addr)
 
 	if err := s.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		return err

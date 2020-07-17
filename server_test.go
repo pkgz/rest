@@ -49,6 +49,25 @@ func TestServer_Run(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestServer_Run_EmptyRouter(t *testing.T) {
+	srv := &Server{}
+	defer func() {
+		require.NoError(t, srv.Shutdown(context.Background()))
+	}()
+
+	go func() {
+		require.NoError(t, srv.Run(nil))
+	}()
+
+	resp, err := http.Get("http://localhost:8080/ping")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	resp, err = http.Get("http://localhost:8080/liveness")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+}
+
 func TestServer_Shutdown(t *testing.T) {
 	srv := &Server{
 		Port: 9092,
