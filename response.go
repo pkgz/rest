@@ -42,6 +42,17 @@ func JsonResponse(w http.ResponseWriter, data interface{}) {
 	RenderJSON(w, data)
 }
 
+// OKResponse - write a OK response with application/json Content-Type header.
+func OkResponse(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	RenderJSON(w, struct {
+		OK bool `json:"ok"`
+	}{
+		OK: true,
+	})
+}
+
 // JsonError - write a HttpError structure as response.
 func ErrorResponse(w http.ResponseWriter, r *http.Request, code int, error error, msg string) {
 	err := HttpError{

@@ -72,7 +72,7 @@ func TestJsonResponse(t *testing.T) {
 			JsonResponse(w, []byte("OK"))
 			return
 		}
-		JsonResponse(w, response)
+		OkResponse(w)
 	}
 
 	t.Run("empty body", func(t *testing.T) {
