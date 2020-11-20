@@ -10,6 +10,14 @@ import (
 	"testing"
 )
 
+type custom struct {
+	test string
+}
+
+func (c *custom) MarshalJSON() ([]byte, error) {
+	return nil, errors.New("test")
+}
+
 func TestJsonError(t *testing.T) {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/empty_error" {
@@ -71,6 +79,11 @@ func TestJsonResponse(t *testing.T) {
 		} else if r.URL.Path == "/string" {
 			JsonResponse(w, []byte("OK"))
 			return
+		} else if r.URL.Path == "/multiply-header-set" {
+			JsonResponse(w, &custom{
+				test: "test",
+			})
+			return
 		}
 		OkResponse(w)
 	}
@@ -80,8 +93,10 @@ func TestJsonResponse(t *testing.T) {
 		w := httptest.NewRecorder()
 		handler(w, req)
 		resp := w.Result()
+
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 		require.Equal(t, "application/json; charset=utf-8", resp.Header.Get("Content-Type"))
+
 		body, err := ioutil.ReadAll(resp.Body)
 		require.NoError(t, err)
 		require.Empty(t, body)
@@ -92,8 +107,10 @@ func TestJsonResponse(t *testing.T) {
 		w := httptest.NewRecorder()
 		handler(w, req)
 		resp := w.Result()
+
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 		require.Equal(t, "application/json; charset=utf-8", resp.Header.Get("Content-Type"))
+
 		body, err := ioutil.ReadAll(resp.Body)
 		require.NoError(t, err)
 
@@ -101,6 +118,20 @@ func TestJsonResponse(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, append(b, '\n'), body)
+	})
+
+	t.Run("multiply header set", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "http://test/multiply-header-set", nil)
+		w := httptest.NewRecorder()
+		handler(w, req)
+		resp := w.Result()
+
+		require.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+		require.Equal(t, "text/plain; charset=utf-8", resp.Header.Get("Content-Type"))
+
+		body, err := ioutil.ReadAll(resp.Body)
+		require.NoError(t, err)
+		require.Equal(t, "json: error calling MarshalJSON for type *rest.custom: test\n", string(body))
 	})
 }
 

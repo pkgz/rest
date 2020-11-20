@@ -22,7 +22,7 @@ type Server struct {
 func handler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("."))
+	_, _ = w.Write([]byte("."))
 }
 
 // Run - will initialize server and run it on provided port.

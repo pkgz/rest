@@ -20,7 +20,7 @@ func (e HttpError) Error() string {
 }
 
 // RenderJSON sends data as json.
-func RenderJSON(w http.ResponseWriter, data interface{}) {
+func RenderJSON(w http.ResponseWriter, code int, data interface{}) {
 	buf := &bytes.Buffer{}
 	enc := json.NewEncoder(buf)
 	enc.SetEscapeHTML(true)
@@ -32,21 +32,19 @@ func RenderJSON(w http.ResponseWriter, data interface{}) {
 		}
 	}
 
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(code)
 	_, _ = w.Write(buf.Bytes())
 }
 
 // JsonResponse - write a response with application/json Content-Type header.
 func JsonResponse(w http.ResponseWriter, data interface{}) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	RenderJSON(w, data)
+	RenderJSON(w, http.StatusOK, data)
 }
 
 // OKResponse - write a OK response with application/json Content-Type header.
 func OkResponse(w http.ResponseWriter) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	RenderJSON(w, struct {
+	RenderJSON(w, http.StatusOK, struct {
 		OK bool `json:"ok"`
 	}{
 		OK: true,
@@ -71,9 +69,7 @@ func ErrorResponse(w http.ResponseWriter, r *http.Request, code int, error error
 
 	log.Printf("[DEBUG] %s - %s - %d (%s) - %s - %s", r.Method, uri, code, http.StatusText(code), err, msg)
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(code)
-	RenderJSON(w, err)
+	RenderJSON(w, code, err)
 }
 
 // NotFound - return a error page for not found
