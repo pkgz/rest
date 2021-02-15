@@ -32,7 +32,9 @@ func RenderJSON(w http.ResponseWriter, code int, data interface{}) {
 		}
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	if w.Header().Get("Content-Type") == "" {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	}
 	w.WriteHeader(code)
 	_, _ = w.Write(buf.Bytes())
 }
