@@ -3,16 +3,25 @@ package rest
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 // HttpError - structure for http errors.
 type HttpError struct {
 	Err     string `json:"error"`
 	Message string `json:"message,omitempty"`
+	TraceID string `json:"trace_id,omitempty"`
 }
+
+var (
+	ErrUnmarshal    = errors.New("UNMARSHAL_ERROR")
+	ErrMissingField = errors.New("MISSING_FIELD")
+	ErrNotFound     = errors.New("NOT_FOUND")
+)
 
 // Just to confirm Error interface.
 func (e HttpError) Error() string {
@@ -58,11 +67,14 @@ func ErrorResponse(w http.ResponseWriter, r *http.Request, code int, error error
 	err := HttpError{
 		Err:     http.StatusText(code),
 		Message: msg,
+		TraceID: r.Header.Get("Uber-Trace-Id"),
 	}
 
 	if error != nil {
 		err.Err = error.Error()
 	}
+	err.Err = strings.ToUpper(err.Err)
+	err.Err = strings.Replace(err.Err, " ", "_", -1)
 
 	uri := r.URL.String()
 	if qun, e := url.QueryUnescape(uri); e == nil {

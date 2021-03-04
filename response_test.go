@@ -3,11 +3,13 @@ package rest
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 type custom struct {
@@ -19,9 +21,15 @@ func (c *custom) MarshalJSON() ([]byte, error) {
 }
 
 func TestJsonError(t *testing.T) {
+	traceID := fmt.Sprintf("%d", time.Now().Unix())
+
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/empty_error" {
 			ErrorResponse(w, r, http.StatusInternalServerError, nil, "test")
+			return
+		} else if r.URL.Path == "/trace_id" {
+			r.Header.Set("Uber-Trace-Id", traceID)
+			ErrorResponse(w, r, http.StatusBadRequest, nil, "trace-id-test")
 			return
 		}
 		ErrorResponse(w, r, http.StatusUnauthorized, errors.New("err test"), "test")
@@ -38,12 +46,11 @@ func TestJsonError(t *testing.T) {
 		body, err := ioutil.ReadAll(resp.Body)
 		require.NoError(t, err)
 
-		var respError HttpError
-		err = json.Unmarshal(body, &respError)
-		require.NoError(t, err)
+		var response HttpError
+		require.NoError(t, json.Unmarshal(body, &response))
 
-		require.Equal(t, "err test", respError.Err)
-		require.Equal(t, "test", respError.Message)
+		require.Equal(t, "ERR_TEST", response.Err)
+		require.Equal(t, "test", response.Message)
 	})
 
 	t.Run("empty error", func(t *testing.T) {
@@ -51,17 +58,36 @@ func TestJsonError(t *testing.T) {
 		w := httptest.NewRecorder()
 		handler(w, req)
 		resp := w.Result()
+
 		require.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 		require.Equal(t, "application/json; charset=utf-8", resp.Header.Get("Content-Type"))
 		body, err := ioutil.ReadAll(resp.Body)
 		require.NoError(t, err)
 
-		var respError HttpError
-		err = json.Unmarshal(body, &respError)
+		var response HttpError
+		require.NoError(t, json.Unmarshal(body, &response))
+
+		require.Equal(t, "INTERNAL_SERVER_ERROR", response.Err)
+		require.Equal(t, "test", response.Message)
+		require.Empty(t, response.TraceID)
+	})
+
+	t.Run("trace id", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "http://test/trace_id", nil)
+		w := httptest.NewRecorder()
+		handler(w, req)
+		resp := w.Result()
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		require.Equal(t, "application/json; charset=utf-8", resp.Header.Get("Content-Type"))
+		body, err := ioutil.ReadAll(resp.Body)
 		require.NoError(t, err)
 
-		require.Equal(t, http.StatusText(http.StatusInternalServerError), respError.Err)
-		require.Equal(t, "test", respError.Message)
+		var response HttpError
+		require.NoError(t, json.Unmarshal(body, &response))
+
+		require.Equal(t, "BAD_REQUEST", response.Err)
+		require.Equal(t, "trace-id-test", response.Message)
+		require.Equal(t, traceID, response.TraceID)
 	})
 }
 
