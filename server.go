@@ -80,10 +80,10 @@ func (s *Server) Run(router http.Handler) error {
 }
 
 // Shutdown - shutdown http server
-func (s *Server) Shutdown(ctx context.Context) error {
+func (s *Server) Shutdown() error {
 	log.Print("[INFO] shutdown rest server")
 
-	ctx, cancel := context.WithTimeout(ctx, time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	if s.httpServer != nil {

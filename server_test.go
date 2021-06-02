@@ -1,7 +1,6 @@
 package rest
 
 import (
-	"context"
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,7 +21,6 @@ func TestServer_Run(t *testing.T) {
 	srv := &Server{
 		Port: 8091,
 	}
-	ctx := context.Background()
 
 	handler := new(handlerFunc)
 	go func() {
@@ -39,7 +37,7 @@ func TestServer_Run(t *testing.T) {
 
 	go func() {
 		time.Sleep(100 * time.Millisecond)
-		require.NoError(t, srv.Shutdown(ctx))
+		require.NoError(t, srv.Shutdown())
 	}()
 
 	srv2 := &Server{
@@ -55,7 +53,7 @@ func TestServer_Run_EmptyRouter(t *testing.T) {
 	}
 
 	defer func() {
-		require.NoError(t, srv.Shutdown(context.Background()))
+		require.NoError(t, srv.Shutdown())
 	}()
 
 	go func() {
@@ -86,12 +84,11 @@ func TestServer_Shutdown(t *testing.T) {
 	srv := &Server{
 		Port: 9092,
 	}
-	ctx := context.Background()
 	handler := new(handlerFunc)
 
 	go func() {
 		time.Sleep(100 * time.Millisecond)
-		require.NoError(t, srv.Shutdown(ctx))
+		require.NoError(t, srv.Shutdown())
 	}()
 
 	require.NoError(t, srv.Run(handler))
