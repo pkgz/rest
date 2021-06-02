@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sync/atomic"
 	"time"
 )
 
-// Server - http server struct.
+// Server - http server struct
 type Server struct {
-	Port int
+	Port    int
+	IsReady *atomic.Value
 
 	ReadHeaderTimeout time.Duration
 	WriteTimeout      time.Duration
@@ -25,11 +27,16 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte("."))
 }
 
-// Run - will initialize server and run it on provided port.
+// Run - will initialize server and run it on provided port
 func (s *Server) Run(router http.Handler) error {
 	if s.Port == 0 {
 		s.Port = 8080
 	}
+	if s.IsReady == nil {
+		s.IsReady = &atomic.Value{}
+		s.IsReady.Store(true)
+	}
+
 	if s.ReadHeaderTimeout == 0 {
 		s.ReadHeaderTimeout = 10 * time.Second
 	}
@@ -39,10 +46,12 @@ func (s *Server) Run(router http.Handler) error {
 	if s.IdleTimeout == 0 {
 		s.IdleTimeout = 60 * time.Second
 	}
+
 	if router == nil {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/ping", handler)
 		mux.HandleFunc("/liveness", handler)
+		mux.HandleFunc("/readiness", Readiness(s.IsReady))
 		router = mux
 	}
 
@@ -63,7 +72,7 @@ func (s *Server) Run(router http.Handler) error {
 	return nil
 }
 
-// Shutdown - shutdown http server.
+// Shutdown - shutdown http server
 func (s *Server) Shutdown(ctx context.Context) error {
 	log.Print("[INFO] shutdown rest server")
 

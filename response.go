@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-// HttpError - structure for http errors.
+// HttpError - structure for http errors
 type HttpError struct {
 	Err     string `json:"error"`
 	Message string `json:"message,omitempty"`
@@ -23,12 +23,12 @@ var (
 	ErrNotFound     = errors.New("NOT_FOUND")
 )
 
-// Just to confirm Error interface.
+// Just to confirm Error interface
 func (e HttpError) Error() string {
 	return e.Err
 }
 
-// RenderJSON sends data as json.
+// RenderJSON sends data as json
 func RenderJSON(w http.ResponseWriter, code int, data interface{}) {
 	buf := &bytes.Buffer{}
 	enc := json.NewEncoder(buf)
@@ -48,12 +48,12 @@ func RenderJSON(w http.ResponseWriter, code int, data interface{}) {
 	_, _ = w.Write(buf.Bytes())
 }
 
-// JsonResponse - write a response with application/json Content-Type header.
+// JsonResponse - write a response with application/json Content-Type header
 func JsonResponse(w http.ResponseWriter, data interface{}) {
 	RenderJSON(w, http.StatusOK, data)
 }
 
-// OKResponse - write a OK response with application/json Content-Type header.
+// OkResponse - write a OK response with application/json Content-Type header
 func OkResponse(w http.ResponseWriter) {
 	RenderJSON(w, http.StatusOK, struct {
 		OK bool `json:"ok"`
@@ -62,7 +62,7 @@ func OkResponse(w http.ResponseWriter) {
 	})
 }
 
-// JsonError - write a HttpError structure as response.
+// ErrorResponse - write a HttpError structure as response
 func ErrorResponse(w http.ResponseWriter, r *http.Request, code int, error error, msg string) {
 	err := HttpError{
 		Err:     http.StatusText(code),

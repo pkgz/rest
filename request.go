@@ -12,7 +12,7 @@ import (
 var ErrEmptyRequest = errors.New("empty request")
 var ErrNotPointer = errors.New("not pointer provided")
 
-// Read body from request and trying to unmarshal to provided struct.
+// ReadBody - read body from request and trying to unmarshal to provided struct
 func ReadBody(w http.ResponseWriter, r *http.Request, str interface{}) error {
 	if r == nil {
 		return ErrEmptyRequest

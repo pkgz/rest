@@ -53,6 +53,7 @@ func TestServer_Run_EmptyRouter(t *testing.T) {
 	srv := &Server{
 		Port: 1234,
 	}
+
 	defer func() {
 		require.NoError(t, srv.Shutdown(context.Background()))
 	}()
@@ -62,13 +63,23 @@ func TestServer_Run_EmptyRouter(t *testing.T) {
 	}()
 
 	host := fmt.Sprintf("http://localhost:%d", srv.Port)
-	resp, err := http.Get(host+"/ping")
+	resp, err := http.Get(host + "/ping")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
-	resp, err = http.Get(host+"/liveness")
+	resp, err = http.Get(host + "/liveness")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	resp, err = http.Get(host + "/readiness")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	srv.IsReady.Store(false)
+
+	resp, err = http.Get(host + "/readiness")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
 }
 
 func TestServer_Shutdown(t *testing.T) {

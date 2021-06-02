@@ -1,11 +1,12 @@
 package rest
 
 import (
-	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5/middleware"
 	"log"
 	"net/http"
 	"net/url"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -38,4 +39,15 @@ func Logger(next http.Handler) http.Handler {
 		next.ServeHTTP(ww, r)
 	}
 	return http.HandlerFunc(fn)
+}
+
+// Readiness - middleware for the readiness probe
+func Readiness(isReady *atomic.Value) http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		if isReady == nil || !isReady.Load().(bool) {
+			http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}
 }
