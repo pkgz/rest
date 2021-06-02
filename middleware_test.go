@@ -32,7 +32,9 @@ func TestReadiness(t *testing.T) {
 	isReady := &atomic.Value{}
 	isReady.Store(false)
 
-	ts := httptest.NewServer(Readiness(isReady))
+	ts := httptest.NewServer(Readiness("/", isReady)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		JsonResponse(w, []byte("OK"))
+	})))
 	defer ts.Close()
 
 	resp, err := http.Get(ts.URL)

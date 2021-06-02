@@ -42,12 +42,20 @@ func Logger(next http.Handler) http.Handler {
 }
 
 // Readiness - middleware for the readiness probe
-func Readiness(isReady *atomic.Value) http.HandlerFunc {
-	return func(w http.ResponseWriter, _ *http.Request) {
-		if isReady == nil || !isReady.Load().(bool) {
-			http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
-			return
-		}
-		w.WriteHeader(http.StatusOK)
+func Readiness(endpoint string, isReady *atomic.Value) func(http.Handler) http.Handler {
+	return func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == "GET" && strings.EqualFold(r.URL.Path, endpoint) {
+				if isReady == nil || !isReady.Load().(bool) {
+					ErrorResponse(w, r, http.StatusServiceUnavailable, nil, "")
+					return
+				}
+
+				OkResponse(w)
+				return
+			}
+
+			h.ServeHTTP(w, r)
+		})
 	}
 }

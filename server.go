@@ -3,6 +3,7 @@ package rest
 import (
 	"context"
 	"fmt"
+	"github.com/go-chi/chi/v5"
 	"log"
 	"net/http"
 	"sync/atomic"
@@ -22,6 +23,12 @@ type Server struct {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte("."))
+}
+
+func ready(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte("."))
@@ -48,10 +55,10 @@ func (s *Server) Run(router http.Handler) error {
 	}
 
 	if router == nil {
-		mux := http.NewServeMux()
+		mux := chi.NewRouter()
+		mux.Use(Readiness("/readiness", s.IsReady))
 		mux.HandleFunc("/ping", handler)
 		mux.HandleFunc("/liveness", handler)
-		mux.HandleFunc("/readiness", Readiness(s.IsReady))
 		router = mux
 	}
 
