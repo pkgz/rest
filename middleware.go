@@ -27,9 +27,12 @@ func Logger(next http.Handler) http.Handler {
 				uri = qun
 			}
 
-			ip := strings.Split(r.RemoteAddr, ":")[0]
-			if strings.HasPrefix(r.RemoteAddr, "[") {
-				ip = strings.Split(r.RemoteAddr, "]:")[0] + "]"
+			ip := r.RemoteAddr
+			if parts := strings.Split(ip, ":"); len(parts) == 2 {
+				ip = parts[0]
+			}
+			if strings.HasPrefix(ip, "[") {
+				ip = strings.Split(ip, "]:")[0] + "]"
 			}
 			duration := time.Now().Sub(start)
 
