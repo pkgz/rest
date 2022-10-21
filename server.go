@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"github.com/go-chi/chi/v5"
-	"github.com/pkg/errors"
 	"log"
 	"net/http"
 	"os"
@@ -38,6 +37,13 @@ type Server struct {
 	httpsServer *http.Server
 
 	mu sync.Mutex
+}
+
+// NewServer - will create new rest server on specified port
+func NewServer(port int) *Server {
+	return &Server{
+		Port: port,
+	}
 }
 
 // Run - will initialize server and run it on provided port
@@ -96,10 +102,10 @@ func (s *Server) Run(router http.Handler) error {
 		}
 
 		if _, err := os.Stat(s.SSL.CertPath); os.IsNotExist(err) {
-			return errors.Wrap(err, "ssl certificate file not found")
+			return fmt.Errorf("ssl certificate not found: %s", s.SSL.CertPath)
 		}
 		if _, err := os.Stat(s.SSL.KeyPath); os.IsNotExist(err) {
-			return errors.Wrap(err, "ssl key file not found")
+			return fmt.Errorf("ssl key not found: %s", s.SSL.KeyPath)
 		}
 
 		log.Printf("[INFO] https rest server on %s:%d", s.Address, s.SSL.Port)
@@ -118,7 +124,7 @@ func (s *Server) Run(router http.Handler) error {
 	s.mu.Unlock()
 
 	if err := s.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		return errors.Wrap(err, "start http server")
+		return fmt.Errorf("start http server, %s", err)
 	}
 
 	return nil

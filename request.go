@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"reflect"
 )
@@ -13,7 +12,7 @@ var ErrEmptyRequest = errors.New("empty request")
 var ErrNotPointer = errors.New("not pointer provided")
 
 // ReadBody - read body from request and trying to unmarshal to provided struct
-func ReadBody(w http.ResponseWriter, r *http.Request, str interface{}) error {
+func ReadBody(r *http.Request, str interface{}) error {
 	if r == nil {
 		return ErrEmptyRequest
 	}
@@ -21,13 +20,13 @@ func ReadBody(w http.ResponseWriter, r *http.Request, str interface{}) error {
 		return ErrNotPointer
 	}
 
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil && err != io.EOF {
 		return err
 	}
+	defer func() { _ = r.Body.Close() }()
 
-	err = json.Unmarshal(body, str)
-	if err != nil {
+	if err = json.Unmarshal(body, str); err != nil {
 		return err
 	}
 

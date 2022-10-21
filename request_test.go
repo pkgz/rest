@@ -20,36 +20,32 @@ func (errReader) Read(p []byte) (n int, err error) {
 
 func TestReadBody(t *testing.T) {
 	t.Run("empty request", func(t *testing.T) {
-		w := httptest.NewRecorder()
 		var emptyStruct interface{}
-		err := ReadBody(w, nil, emptyStruct)
+		err := ReadBody(nil, emptyStruct)
 		require.Error(t, err)
 		require.True(t, errors.Is(ErrEmptyRequest, err))
 	})
 
 	t.Run("empty struct", func(t *testing.T) {
-		w := httptest.NewRecorder()
 		r := httptest.NewRequest(http.MethodPost, "/something", nil)
 		var emptyStruct interface{}
-		err := ReadBody(w, r, emptyStruct)
+		err := ReadBody(r, emptyStruct)
 		require.Error(t, err)
 		require.True(t, errors.Is(ErrNotPointer, err))
 	})
 
 	t.Run("read error", func(t *testing.T) {
-		w := httptest.NewRecorder()
 		r := httptest.NewRequest(http.MethodPost, "/something", errReader(0))
 		var emptyStruct interface{}
-		err := ReadBody(w, r, &emptyStruct)
+		err := ReadBody(r, &emptyStruct)
 		require.Error(t, err)
 		require.Equal(t, errBodyRead, err)
 	})
 
 	t.Run("unmarshal struct", func(t *testing.T) {
-		w := httptest.NewRecorder()
 		r := httptest.NewRequest(http.MethodPost, "/something", nil)
 		var emptyStruct interface{}
-		err := ReadBody(w, r, &emptyStruct)
+		err := ReadBody(r, &emptyStruct)
 		require.Error(t, err)
 		require.Equal(t, "unexpected end of JSON input", err.Error())
 	})
@@ -63,13 +59,11 @@ func TestReadBody(t *testing.T) {
 		b, err := json.Marshal(requestBody)
 		require.NoError(t, err)
 
-		w := httptest.NewRecorder()
 		r := httptest.NewRequest(http.MethodPost, "/something", bytes.NewBuffer(b))
 		var emptyStruct struct {
 			Name string
 		}
-		err = ReadBody(w, r, &emptyStruct)
-		require.NoError(t, err)
+		require.NoError(t, ReadBody(r, &emptyStruct))
 
 		require.Equal(t, requestBody.Name, emptyStruct.Name)
 	})

@@ -53,7 +53,7 @@ func JsonResponse(w http.ResponseWriter, data interface{}) {
 	RenderJSON(w, http.StatusOK, data)
 }
 
-// OkResponse - write a OK response with application/json Content-Type header
+// OkResponse - write OK response with application/json Content-Type header
 func OkResponse(w http.ResponseWriter) {
 	RenderJSON(w, http.StatusOK, struct {
 		OK bool `json:"ok"`
@@ -86,7 +86,7 @@ func ErrorResponse(w http.ResponseWriter, r *http.Request, code int, error error
 	RenderJSON(w, code, err)
 }
 
-// NotFound - return a error page for not found
+// NotFound - return error page for not found
 func NotFound(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusNotFound)
