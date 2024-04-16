@@ -169,7 +169,6 @@ func (s *Server) http(address string, port int, router http.Handler) *http.Serve
 func (s *Server) https(address string, port int, router http.Handler) *http.Server {
 	server := s.http(address, port, router)
 	server.TLSConfig = &tls.Config{
-		PreferServerCipherSuites: true,
 		CipherSuites: []uint16{
 			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
 			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,

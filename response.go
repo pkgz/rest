@@ -21,6 +21,7 @@ var (
 	ErrUnmarshal    = errors.New("UNMARSHAL_ERROR")
 	ErrMissingField = errors.New("MISSING_FIELD")
 	ErrNotFound     = errors.New("NOT_FOUND")
+	ErrValidate     = errors.New("VALIDATION_ERROR")
 )
 
 // Just to confirm Error interface
