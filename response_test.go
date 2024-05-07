@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/stretchr/testify/require"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -43,7 +43,7 @@ func TestJsonError(t *testing.T) {
 		resp := w.Result()
 		require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 		require.Equal(t, "application/json; charset=utf-8", resp.Header.Get("Content-Type"))
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
 
 		var response HttpError
@@ -61,7 +61,7 @@ func TestJsonError(t *testing.T) {
 
 		require.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 		require.Equal(t, "application/json; charset=utf-8", resp.Header.Get("Content-Type"))
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
 
 		var response HttpError
@@ -79,7 +79,7 @@ func TestJsonError(t *testing.T) {
 		resp := w.Result()
 		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 		require.Equal(t, "application/json; charset=utf-8", resp.Header.Get("Content-Type"))
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
 
 		var response HttpError
@@ -123,7 +123,7 @@ func TestJsonResponse(t *testing.T) {
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 		require.Equal(t, "application/json; charset=utf-8", resp.Header.Get("Content-Type"))
 
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
 		require.Empty(t, body)
 	})
@@ -137,7 +137,7 @@ func TestJsonResponse(t *testing.T) {
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 		require.Equal(t, "application/json; charset=utf-8", resp.Header.Get("Content-Type"))
 
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
 
 		b, err := json.Marshal(response)
@@ -155,9 +155,50 @@ func TestJsonResponse(t *testing.T) {
 		require.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 		require.Equal(t, "text/plain; charset=utf-8", resp.Header.Get("Content-Type"))
 
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
 		require.Equal(t, "json: error calling MarshalJSON for type *rest.custom: test\n", string(body))
+	})
+}
+
+func TestTextResponse(t *testing.T) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/empty" {
+			TextResponse(w, "")
+			return
+		} else if r.URL.Path == "/ok" {
+			TextResponse(w, "OK")
+			return
+		}
+		OkResponse(w)
+	}
+
+	t.Run("empty body", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "http://test/empty", nil)
+		w := httptest.NewRecorder()
+		handler(w, req)
+		resp := w.Result()
+
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		require.Equal(t, "text/html; charset=utf-8", resp.Header.Get("Content-Type"))
+
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		require.Empty(t, body)
+	})
+
+	t.Run("ok", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "http://test/ok", nil)
+		w := httptest.NewRecorder()
+		handler(w, req)
+		resp := w.Result()
+
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		require.Equal(t, "text/html; charset=utf-8", resp.Header.Get("Content-Type"))
+
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		require.Equal(t, "OK", string(body))
 	})
 }
 

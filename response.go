@@ -54,6 +54,13 @@ func JsonResponse(w http.ResponseWriter, data interface{}) {
 	RenderJSON(w, http.StatusOK, data)
 }
 
+// TextResponse - write a response with application/text Content-Type header
+func TextResponse(w http.ResponseWriter, data string) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(data))
+}
+
 // OkResponse - write OK response with application/json Content-Type header
 func OkResponse(w http.ResponseWriter) {
 	RenderJSON(w, http.StatusOK, struct {
