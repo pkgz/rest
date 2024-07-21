@@ -32,3 +32,17 @@ func ReadBody(r *http.Request, str interface{}) error {
 
 	return nil
 }
+
+func GetAddr(r *http.Request) string {
+	addr := r.RemoteAddr
+	if CFAddr := r.Header.Get("CF-Connecting-IP"); CFAddr != "" {
+		addr = CFAddr
+	}
+	if addr == "" {
+		addr = r.Header.Get("X-Forwarded-For")
+	}
+	if addr == "" {
+		addr = r.Header.Get("X-Real-Ip")
+	}
+	return addr
+}
