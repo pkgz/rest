@@ -27,16 +27,9 @@ func Logger(next http.Handler) http.Handler {
 				uri = qun
 			}
 
-			ip := r.RemoteAddr
-			if parts := strings.Split(ip, ":"); len(parts) == 2 {
-				ip = parts[0]
-			}
-			if strings.HasPrefix(ip, "[") {
-				ip = strings.Split(ip, "]:")[0] + "]"
-			}
 			duration := time.Now().Sub(start)
 
-			log.Printf("[DEBUG] %s - %s - %s - %v - %v", r.Method, uri, ip, statusCode, duration)
+			log.Printf("[DEBUG] %s - %s - %s - %v - %v", r.Method, uri, GetAddr(r), statusCode, duration)
 		}()
 
 		next.ServeHTTP(ww, r)

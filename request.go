@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"reflect"
+	"strings"
 )
 
 var ErrEmptyRequest = errors.New("empty request")
@@ -44,5 +45,10 @@ func GetAddr(r *http.Request) string {
 	if addr == "" {
 		addr = r.Header.Get("X-Real-Ip")
 	}
+
+	if strings.Count(addr, ":") == 1 {
+		addr = strings.Split(addr, ":")[0]
+	}
+
 	return addr
 }
