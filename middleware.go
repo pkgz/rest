@@ -22,13 +22,18 @@ func Logger(next http.Handler) http.Handler {
 				statusCode = 200
 			}
 
-			uri := r.URL.String()
-			if qun, e := url.QueryUnescape(uri); e == nil {
-				uri = qun
+			var uri string
+			if r.URL != nil {
+				uri = r.URL.String()
+				uri = SanitizeURL(uri)
+				if qun, e := url.QueryUnescape(uri); e == nil {
+					uri = qun
+				}
+			} else {
+				uri = "<nil>"
 			}
 
 			duration := time.Now().Sub(start)
-
 			log.Printf("[DEBUG] %s - %s - %s - %v - %v", r.Method, uri, GetAddr(r), statusCode, duration)
 		}()
 
@@ -54,4 +59,25 @@ func Readiness(endpoint string, isReady *atomic.Value) func(http.Handler) http.H
 			h.ServeHTTP(w, r)
 		})
 	}
+}
+
+// SanitizeURL replaces JWT token values with asterisks in the given URL
+func SanitizeURL(uri string) string {
+	parsedURL, err := url.Parse(uri)
+	if err != nil {
+		return uri
+	}
+	query := parsedURL.Query()
+
+	if jwtToken := query.Get("jwt"); jwtToken != "" {
+		query.Del("jwt")
+		encodedQuery := query.Encode()
+		if encodedQuery != "" {
+			parsedURL.RawQuery = encodedQuery + "&jwt=***"
+		} else {
+			parsedURL.RawQuery = "jwt=***"
+		}
+	}
+
+	return parsedURL.String()
 }

@@ -34,6 +34,7 @@ func ReadBody(r *http.Request, str interface{}) error {
 	return nil
 }
 
+// GetAddr - get client address from request
 func GetAddr(r *http.Request) string {
 	addr := r.RemoteAddr
 	if CFAddr := r.Header.Get("CF-Connecting-IP"); CFAddr != "" {
@@ -41,12 +42,20 @@ func GetAddr(r *http.Request) string {
 	}
 	if addr == "" {
 		addr = r.Header.Get("X-Forwarded-For")
+		if i := strings.Index(addr, ","); i >= 0 {
+			addr = addr[:i]
+		}
+		addr = strings.TrimSpace(addr)
 	}
 	if addr == "" {
 		addr = r.Header.Get("X-Real-Ip")
 	}
 
-	if strings.Count(addr, ":") == 1 {
+	if strings.HasPrefix(addr, "[") && strings.Contains(addr, "]:") {
+		if i := strings.LastIndex(addr, "]:"); i >= 0 {
+			addr = addr[:i+1]
+		}
+	} else if strings.Count(addr, ":") == 1 {
 		addr = strings.Split(addr, ":")[0]
 	}
 

@@ -68,3 +68,113 @@ func TestReadBody(t *testing.T) {
 		require.Equal(t, requestBody.Name, emptyStruct.Name)
 	})
 }
+
+func TestGetAddr(t *testing.T) {
+	t.Run("all empty IP sources", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/test", nil)
+		req.RemoteAddr = ""
+
+		req.Header.Set("CF-Connecting-IP", "")
+		req.Header.Set("X-Forwarded-For", "")
+		req.Header.Set("X-Real-Ip", "")
+
+		addr := GetAddr(req)
+		require.Equal(t, "", addr)
+	})
+
+	t.Run("IPv4 address from RemoteAddr", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/test", nil)
+		req.RemoteAddr = "192.168.1.1:12345"
+
+		addr := GetAddr(req)
+		require.Equal(t, "192.168.1.1", addr)
+	})
+
+	t.Run("IPv6 address from RemoteAddr", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/test", nil)
+		req.RemoteAddr = "[2001:db8::1]:12345"
+
+		addr := GetAddr(req)
+		require.Equal(t, "[2001:db8::1]", addr)
+	})
+
+	t.Run("CF-Connecting-IP header priority", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/test", nil)
+		req.RemoteAddr = "10.0.0.1:12345"
+		req.Header.Set("CF-Connecting-IP", "203.0.113.195")
+		req.Header.Set("X-Forwarded-For", "198.51.100.23")
+		req.Header.Set("X-Real-Ip", "192.0.2.50")
+
+		addr := GetAddr(req)
+		require.Equal(t, "203.0.113.195", addr)
+	})
+
+	t.Run("X-Forwarded-For fallback", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/test", nil)
+		req.RemoteAddr = ""
+		req.Header.Set("X-Forwarded-For", "198.51.100.23")
+		req.Header.Set("X-Real-Ip", "192.0.2.50")
+
+		addr := GetAddr(req)
+		require.Equal(t, "198.51.100.23", addr)
+	})
+
+	t.Run("X-Real-Ip final fallback", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/test", nil)
+		req.RemoteAddr = ""
+		req.Header.Set("X-Real-Ip", "192.0.2.50")
+
+		addr := GetAddr(req)
+		require.Equal(t, "192.0.2.50", addr)
+	})
+
+	t.Run("X-Forwarded-For with multiple IPs", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/test", nil)
+		req.RemoteAddr = ""
+		req.Header.Set("X-Forwarded-For", "203.0.113.195, 198.51.100.23, 192.0.2.50")
+
+		addr := GetAddr(req)
+		require.Equal(t, "203.0.113.195", addr)
+	})
+
+	t.Run("IPv6 in X-Forwarded-For", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/test", nil)
+		req.RemoteAddr = ""
+		req.Header.Set("X-Forwarded-For", "2001:db8:85a3::8a2e:370:7334")
+
+		addr := GetAddr(req)
+		require.Equal(t, "2001:db8:85a3::8a2e:370:7334", addr)
+	})
+
+	t.Run("malformed IP address", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/test", nil)
+		req.RemoteAddr = "invalid-ip-format"
+
+		addr := GetAddr(req)
+		require.Equal(t, "invalid-ip-format", addr)
+	})
+
+	t.Run("empty IPv4 address with port only", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/test", nil)
+		req.RemoteAddr = ":2102"
+
+		addr := GetAddr(req)
+		require.Equal(t, "", addr)
+	})
+
+	t.Run("IPv6 localhost with port", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/test", nil)
+		req.RemoteAddr = "[::]:2102"
+
+		addr := GetAddr(req)
+		require.Equal(t, "[::]", addr)
+	})
+
+	t.Run("IPv6 localhost alternative form with port", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/test", nil)
+		req.RemoteAddr = "[::1]:2102"
+
+		addr := GetAddr(req)
+		require.Equal(t, "[::1]", addr)
+	})
+}
