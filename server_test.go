@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"crypto/tls"
 	"fmt"
 	"github.com/stretchr/testify/require"
 	"net/http"
@@ -14,6 +15,24 @@ func (h *handlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte("OK"))
+}
+
+func TestNewServer(t *testing.T) {
+	srv := NewServer(8042)
+	require.NotNil(t, srv)
+	require.Equal(t, 8042, srv.Port)
+}
+
+func TestServer_https(t *testing.T) {
+	srv := &Server{}
+	server := srv.https("", 8443, new(handlerFunc))
+
+	require.NotNil(t, server)
+	require.Equal(t, ":8443", server.Addr)
+	require.NotNil(t, server.TLSConfig)
+	require.Equal(t, uint16(tls.VersionTLS12), server.TLSConfig.MinVersion)
+	require.NotEmpty(t, server.TLSConfig.CipherSuites)
+	require.NotEmpty(t, server.TLSConfig.CurvePreferences)
 }
 
 func TestServer_Run(t *testing.T) {

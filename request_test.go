@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -67,6 +68,34 @@ func TestReadBody(t *testing.T) {
 
 		require.Equal(t, requestBody.Name, emptyStruct.Name)
 	})
+
+	t.Run("body exceeding MaxBodyBytes is truncated", func(t *testing.T) {
+		original := MaxBodyBytes
+		MaxBodyBytes = 10
+		defer func() { MaxBodyBytes = original }()
+
+		big := `{"name":"` + strings.Repeat("a", 100) + `"}`
+		r := httptest.NewRequest(http.MethodPost, "/something", bytes.NewBufferString(big))
+
+		var out struct {
+			Name string
+		}
+		err := ReadBody(r, &out)
+		require.Error(t, err) // truncated body is invalid JSON
+	})
+
+	t.Run("body within MaxBodyBytes is read fully", func(t *testing.T) {
+		original := MaxBodyBytes
+		MaxBodyBytes = 1024
+		defer func() { MaxBodyBytes = original }()
+
+		r := httptest.NewRequest(http.MethodPost, "/something", bytes.NewBufferString(`{"name":"test"}`))
+		var out struct {
+			Name string
+		}
+		require.NoError(t, ReadBody(r, &out))
+		require.Equal(t, "test", out.Name)
+	})
 }
 
 func TestGetAddr(t *testing.T) {
@@ -117,6 +146,24 @@ func TestGetAddr(t *testing.T) {
 
 		addr := GetAddr(req)
 		require.Equal(t, "198.51.100.23", addr)
+	})
+
+	t.Run("X-Forwarded-For takes precedence over RemoteAddr", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/test", nil)
+		req.RemoteAddr = "10.0.0.1:12345"
+		req.Header.Set("X-Forwarded-For", "198.51.100.23")
+
+		addr := GetAddr(req)
+		require.Equal(t, "198.51.100.23", addr)
+	})
+
+	t.Run("X-Real-Ip takes precedence over RemoteAddr", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/test", nil)
+		req.RemoteAddr = "10.0.0.1:12345"
+		req.Header.Set("X-Real-Ip", "192.0.2.50")
+
+		addr := GetAddr(req)
+		require.Equal(t, "192.0.2.50", addr)
 	})
 
 	t.Run("X-Real-Ip final fallback", func(t *testing.T) {

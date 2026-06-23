@@ -1,11 +1,13 @@
 package rest
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/stretchr/testify/require"
 	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -89,6 +91,25 @@ func TestJsonError(t *testing.T) {
 		require.Equal(t, "trace-id-test", response.Message)
 		require.Equal(t, traceID, response.TraceID)
 	})
+}
+
+func TestErrorResponseSanitizesURL(t *testing.T) {
+	originalOutput := log.Writer()
+	defer log.SetOutput(originalOutput)
+
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+
+	jwtToken := "eyJhbGciOiJSUzI1NiJ9.eyJleHAiOjF9.signature"
+	req := httptest.NewRequest("GET", "http://test/api?jwt="+jwtToken+"&foo=bar", nil)
+	w := httptest.NewRecorder()
+
+	ErrorResponse(w, req, http.StatusUnauthorized, nil, "denied")
+
+	out := buf.String()
+	require.Contains(t, out, "jwt=***")
+	require.Contains(t, out, "foo=bar")
+	require.NotContains(t, out, jwtToken)
 }
 
 func TestJsonResponse(t *testing.T) {
@@ -180,7 +201,7 @@ func TestTextResponse(t *testing.T) {
 		resp := w.Result()
 
 		require.Equal(t, http.StatusOK, resp.StatusCode)
-		require.Equal(t, "text/html; charset=utf-8", resp.Header.Get("Content-Type"))
+		require.Equal(t, "text/plain; charset=utf-8", resp.Header.Get("Content-Type"))
 
 		body, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
@@ -194,7 +215,7 @@ func TestTextResponse(t *testing.T) {
 		resp := w.Result()
 
 		require.Equal(t, http.StatusOK, resp.StatusCode)
-		require.Equal(t, "text/html; charset=utf-8", resp.Header.Get("Content-Type"))
+		require.Equal(t, "text/plain; charset=utf-8", resp.Header.Get("Content-Type"))
 
 		body, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)

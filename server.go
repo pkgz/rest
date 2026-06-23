@@ -30,6 +30,7 @@ type Server struct {
 	SSL     *SSLConfig
 
 	ReadHeaderTimeout time.Duration
+	ReadTimeout       time.Duration
 	WriteTimeout      time.Duration
 	IdleTimeout       time.Duration
 
@@ -62,6 +63,9 @@ func (s *Server) Run(router http.Handler) error {
 
 	if s.ReadHeaderTimeout == 0 {
 		s.ReadHeaderTimeout = 10 * time.Second
+	}
+	if s.ReadTimeout == 0 {
+		s.ReadTimeout = 30 * time.Second
 	}
 	if s.WriteTimeout == 0 {
 		s.WriteTimeout = 30 * time.Second
@@ -162,6 +166,7 @@ func (s *Server) http(address string, port int, router http.Handler) *http.Serve
 		Addr:              fmt.Sprintf("%s:%d", address, port),
 		Handler:           router,
 		ReadHeaderTimeout: s.ReadHeaderTimeout,
+		ReadTimeout:       s.ReadTimeout,
 		WriteTimeout:      s.WriteTimeout,
 		IdleTimeout:       s.IdleTimeout,
 	}

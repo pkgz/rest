@@ -50,13 +50,13 @@ func RenderJSON(w http.ResponseWriter, code int, data interface{}) {
 }
 
 // JsonResponse - write a response with application/json Content-Type header
-func JsonResponse(w http.ResponseWriter, data interface{}) {
+func JsonResponse(w http.ResponseWriter, data any) {
 	RenderJSON(w, http.StatusOK, data)
 }
 
-// TextResponse - write a response with application/text Content-Type header
+// TextResponse - write a response with text/plain Content-Type header
 func TextResponse(w http.ResponseWriter, data string) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(data))
 }
@@ -84,7 +84,7 @@ func ErrorResponse(w http.ResponseWriter, r *http.Request, code int, error error
 	err.Err = strings.ToUpper(err.Err)
 	err.Err = strings.Replace(err.Err, " ", "_", -1)
 
-	uri := r.URL.String()
+	uri := SanitizeURL(r.URL.String())
 	if qun, e := url.QueryUnescape(uri); e == nil {
 		uri = qun
 	}

@@ -161,6 +161,71 @@ func TestLogger(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("known health paths are not logged", func(t *testing.T) {
+		handler := Logger(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+
+		for _, p := range HealthPaths {
+			var buf bytes.Buffer
+			log.SetOutput(&buf)
+
+			req := httptest.NewRequest("GET", p, nil)
+			resp := httptest.NewRecorder()
+			handler.ServeHTTP(resp, req)
+
+			require.Equal(t, http.StatusOK, resp.Code)
+			require.Empty(t, buf.String(), "expected no log for health path %q", p)
+		}
+	})
+
+	t.Run("nested health paths are still logged", func(t *testing.T) {
+		var buf bytes.Buffer
+		log.SetOutput(&buf)
+
+		handler := Logger(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+
+		req := httptest.NewRequest("GET", "/work/ping", nil)
+		resp := httptest.NewRecorder()
+		handler.ServeHTTP(resp, req)
+
+		require.Contains(t, buf.String(), "/work/ping")
+	})
+}
+
+func TestSanitizeURL(t *testing.T) {
+	testCases := []struct {
+		name string
+		uri  string
+		want string
+	}{
+		{"no query", "/api/data", "/api/data"},
+		{"no sensitive params unchanged", "/api?foo=bar&baz=qux", "/api?foo=bar&baz=qux"},
+		{"jwt masked", "/api?jwt=secret", "/api?jwt=***"},
+		{"token masked", "/api?token=secret", "/api?token=***"},
+		{"access_token masked", "/api?access_token=secret", "/api?access_token=***"},
+		{"api_key masked", "/api?api_key=secret", "/api?api_key=***"},
+		{"jwt masked with other params", "/api?foo=bar&jwt=secret", "/api?foo=bar&jwt=***"},
+		{"empty sensitive value untouched", "/api?jwt=", "/api?jwt="},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, SanitizeURL(tc.uri))
+		})
+	}
+
+	t.Run("multiple sensitive params masked", func(t *testing.T) {
+		got := SanitizeURL("/api?access_token=a&api_key=b&foo=bar")
+		require.Contains(t, got, "foo=bar")
+		require.Contains(t, got, "access_token=***")
+		require.Contains(t, got, "api_key=***")
+		require.NotContains(t, got, "access_token=a")
+		require.NotContains(t, got, "api_key=b")
+	})
 }
 
 func TestReadiness(t *testing.T) {
